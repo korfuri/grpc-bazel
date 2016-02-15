@@ -445,6 +445,36 @@ crypto_sources_aarch64 = [
     "linux-aarch64/crypto/sha/sha512-armv8.S",
 ]
 
+crypto_sources_aarch64_inputs = [
+    "crypto/aes/asm/aesv8-armx.pl",
+    "crypto/modes/asm/ghashv8-armx.pl",
+    "crypto/sha/asm/sha1-armv8.S",
+    "crypto/sha/asm/sha256-armv8.S",
+    "crypto/sha/asm/sha512-armv8.S",
+]
+
+genrule(
+    name = "perlasm_files_aarch64",
+    srcs = crypto_sources_aarch64_inputs + [
+    ],
+    outs = crypto_sources_aarch64,
+    # cmd can be generated with the following one-liner:
+    ## find bazel-bazel-grpc/external/boringssl/ -iname 'CMakeLists.txt' \
+    ##    -exec grep -He '^perlasm' \{\} \; | \
+    ## grep -E 'armx|armv8' | \
+    ## sed -re 's#.*boringssl/(.*)/CMakeLists.txt:perlasm[(]([^.]*)\.'\
+    ## '[$][{]ASM_EXT[}][ ]([^.]+\.pl)[ ]?(.*)[)]#"perl \$\(location \1/\3\)'\
+    ## ' linux64 \4 > \$\(location linux-aarch64/\1/\2.S\) \&\&" +#g'
+    # You'll need to also edit the end of the last line (drop the && and the +)
+    cmd = (
+        "perl $(location crypto/modes/asm/ghashv8-armx.pl) linux64  > $(location linux-aarch64/crypto/modes/ghashv8-armx.S) &&" +
+        "perl $(location crypto/aes/asm/aesv8-armx.pl) linux64  > $(location linux-aarch64/crypto/aes/aesv8-armx.S) &&" +
+        "perl $(location crypto/sha/asm/sha1-armv8.pl) linux64  > $(location linux-aarch64/crypto/sha/sha1-armv8.S) &&" +
+        "perl $(location crypto/sha/asm/sha512-armv8.pl) linux64 sha256 > $(location linux-aarch64/crypto/sha/sha256-armv8.S) &&" +
+        "perl $(location crypto/sha/asm/sha512-armv8.pl) linux64 sha512 > $(location linux-aarch64/crypto/sha/sha512-armv8.S)"
+    )
+)
+
 crypto_sources_arm = [
     "linux-arm/crypto/aes/aes-armv4.S",
     "linux-arm/crypto/aes/aesv8-armx32.S",
@@ -455,10 +485,52 @@ crypto_sources_arm = [
     "linux-arm/crypto/sha/sha1-armv4-large.S",
     "linux-arm/crypto/sha/sha256-armv4.S",
     "linux-arm/crypto/sha/sha512-armv4.S",
+]
+
+crypto_sources_arm_extra = [
     "crypto/chacha/chacha_vec_arm.S",
     "crypto/cpu-arm-asm.S",
     "crypto/poly1305/poly1305_arm_asm.S",
 ]
+
+crypto_sources_arm_inputs = [
+    "crypto/aes/asm/aes-armv4.pl",
+    "crypto/aes/asm/aesv8-armx.pl",
+    "crypto/aes/asm/bsaes-armv7.pl",
+    "crypto/bn/asm/armv4-mont.pl",
+    "crypto/modes/asm/ghash-armv4.pl",
+    "crypto/modes/asm/ghashv8-armx.pl",
+    "crypto/sha/asm/sha1-armv4-large.pl",
+    "crypto/sha/asm/sha256-armv4.pl",
+    "crypto/sha/asm/sha512-armv4.pl",
+]
+
+genrule(
+    name = "perlasm_files_arm",
+    srcs = crypto_sources_arm_inputs + [
+        "crypto/perlasm/arm-xlate.pl",
+    ],
+    outs = crypto_sources_arm,
+    # cmd can be generated with the following one-liner:
+    ## find bazel-bazel-grpc/external/boringssl/ -iname 'CMakeLists.txt' \
+    ##    -exec grep -He '^perlasm' \{\} \; | \
+    ## grep -E 'arm' | grep -v 'armv8' \
+    ## sed -re 's#.*boringssl/(.*)/CMakeLists.txt:perlasm[(]([^.]*)\.'\
+    ## '[$][{]ASM_EXT[}][ ]([^.]+\.pl)[ ]?(.*)[)]#"perl \$\(location \1/\3\)'\
+    ## ' linux32 \4 > \$\(location linux-arm/\1/\2.S\) \&\&" +#g'
+    # You'll need to also edit the end of the last line (drop the && and the +)
+    cmd = (
+        "perl $(location crypto/bn/asm/armv4-mont.pl) linux32  > $(location linux-arm/crypto/bn/armv4-mont.S) &&" +
+        "perl $(location crypto/modes/asm/ghash-armv4.pl) linux32  > $(location linux-arm/crypto/modes/ghash-armv4.S) &&" +
+        "perl $(location crypto/modes/asm/ghashv8-armx.pl) linux32  > $(location linux-arm/crypto/modes/ghashv8-armx32.S) &&" +
+        "perl $(location crypto/aes/asm/aes-armv4.pl) linux32  > $(location linux-arm/crypto/aes/aes-armv4.S) &&" +
+        "perl $(location crypto/aes/asm/bsaes-armv7.pl) linux32  > $(location linux-arm/crypto/aes/bsaes-armv7.S) &&" +
+        "perl $(location crypto/aes/asm/aesv8-armx.pl) linux32  > $(location linux-arm/crypto/aes/aesv8-armx32.S) &&" +
+        "perl $(location crypto/sha/asm/sha1-armv4-large.pl) linux32  > $(location linux-arm/crypto/sha/sha1-armv4-large.S) &&" +
+        "perl $(location crypto/sha/asm/sha256-armv4.pl) linux32  > $(location linux-arm/crypto/sha/sha256-armv4.S) &&" +
+        "perl $(location crypto/sha/asm/sha512-armv4.pl) linux32  > $(location linux-arm/crypto/sha/sha512-armv4.S)"
+    )
+)
 
 crypto_sources_x86 = [
     "linux-x86/crypto/aes/aes-586.S",
@@ -474,6 +546,52 @@ crypto_sources_x86 = [
     "linux-x86/crypto/sha/sha256-586.S",
     "linux-x86/crypto/sha/sha512-586.S",
 ]
+
+crypto_sources_x86_inputs = [
+    "crypto/bn/asm/bn-586.pl",
+    "crypto/bn/asm/co-586.pl",
+    "crypto/bn/asm/x86-mont.pl",
+    "crypto/md5/asm/md5-586.pl",
+    "crypto/modes/asm/ghash-x86.pl",
+    "crypto/aes/asm/aes-586.pl",
+    "crypto/aes/asm/vpaes-x86.pl",
+    "crypto/aes/asm/aesni-x86.pl",
+    "crypto/sha/asm/sha1-586.pl",
+    "crypto/sha/asm/sha256-586.pl",
+    "crypto/sha/asm/sha512-586.pl",
+    "crypto/rc4/asm/rc4-586.pl",
+]
+
+genrule(
+    name = "perlasm_files_x86",
+    srcs = crypto_sources_x86_inputs + [
+        "crypto/perlasm/x86asm.pl",
+        "crypto/perlasm/x86gas.pl",
+    ],
+    outs = crypto_sources_x86,
+    # cmd can be generated with the following one-liner:
+    ## find bazel-bazel-grpc/external/boringssl/ -iname 'CMakeLists.txt' \
+    ##    -exec grep -He '^perlasm' \{\} \; | \
+    ## grep -E '586|x86' | grep -v x86_64 | \
+    ## sed -re 's#.*boringssl/(.*)/CMakeLists.txt:perlasm[(]([^.]*)\.'\
+    ## '[$][{]ASM_EXT[}][ ]([^.]+\.pl)[ ]?(.*)[)]#"perl \$\(location \1/\3\)'\
+    ## ' elf -fPIC -DOPENSSL_IA32_SSE2 \4 > \$\(location linux-x86/\1/\2.S\) \&\&" +#g'
+    # You'll need to also edit the end of the last line (drop the && and the +)
+    cmd = (
+        "perl $(location crypto/bn/asm/bn-586.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/bn/bn-586.S) &&" +
+        "perl $(location crypto/bn/asm/co-586.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/bn/co-586.S) &&" +
+        "perl $(location crypto/bn/asm/x86-mont.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/bn/x86-mont.S) &&" +
+        "perl $(location crypto/md5/asm/md5-586.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/md5/md5-586.S) &&" +
+        "perl $(location crypto/modes/asm/ghash-x86.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/modes/ghash-x86.S) &&" +
+        "perl $(location crypto/aes/asm/aes-586.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/aes/aes-586.S) &&" +
+        "perl $(location crypto/aes/asm/vpaes-x86.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/aes/vpaes-x86.S) &&" +
+        "perl $(location crypto/aes/asm/aesni-x86.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/aes/aesni-x86.S) &&" +
+        "perl $(location crypto/sha/asm/sha1-586.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/sha/sha1-586.S) &&" +
+        "perl $(location crypto/sha/asm/sha256-586.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/sha/sha256-586.S) &&" +
+        "perl $(location crypto/sha/asm/sha512-586.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/sha/sha512-586.S) &&" +
+        "perl $(location crypto/rc4/asm/rc4-586.pl) elf -fPIC -DOPENSSL_IA32_SSE2  > $(location linux-x86/crypto/rc4/rc4-586.S)"
+    )
+)
 
 crypto_sources_x86_64 = [
     "linux-x86_64/crypto/aes/aes-x86_64.S",
@@ -494,6 +612,63 @@ crypto_sources_x86_64 = [
     "linux-x86_64/crypto/sha/sha256-x86_64.S",
     "linux-x86_64/crypto/sha/sha512-x86_64.S",
 ]
+
+crypto_sources_x86_64_inputs = [
+    "crypto/aes/asm/aes-x86_64.pl",
+    "crypto/aes/asm/aesni-x86_64.pl",
+    "crypto/aes/asm/bsaes-x86_64.pl",
+    "crypto/aes/asm/vpaes-x86_64.pl",
+    "crypto/bn/asm/rsaz-avx2.pl",
+    "crypto/bn/asm/rsaz-x86_64.pl",
+    "crypto/bn/asm/x86_64-mont.pl",
+    "crypto/bn/asm/x86_64-mont5.pl",
+    "crypto/md5/asm/md5-x86_64.pl",
+    "crypto/modes/asm/aesni-gcm-x86_64.pl",
+    "crypto/modes/asm/ghash-x86_64.pl",
+    "crypto/rand/asm/rdrand-x86_64.pl",
+    "crypto/rc4/asm/rc4-md5-x86_64.pl",
+    "crypto/rc4/asm/rc4-x86_64.pl",
+    "crypto/sha/asm/sha1-x86_64.pl",
+    "crypto/sha/asm/sha256-586.pl",
+    "crypto/sha/asm/sha512-x86_64.pl",
+]
+
+genrule(
+    name = "perlasm_files_x86_64",
+    srcs = crypto_sources_x86_64_inputs + [
+        "crypto/perlasm/x86_64-xlate.pl",
+        "crypto/perlasm/x86asm.pl",
+        "crypto/perlasm/x86gas.pl",
+    ],
+    outs = crypto_sources_x86_64,
+    # cmd can be generated with the following one-liner:
+    ## find bazel-bazel-grpc/external/boringssl/ -iname 'CMakeLists.txt' \
+    ##    -exec grep -He '^perlasm' \{\} \; | \
+    ## grep -E 'avx2|x86_64' | \
+    ## sed -re 's#.*boringssl/(.*)/CMakeLists.txt:perlasm[(]([^.]*)\.'\
+    ## '[$][{]ASM_EXT[}][ ]([^.]+\.pl)[ ]?(.*)[)]#"perl \$\(location \1/\3\)'\
+    ## ' elf \4 > \$\(location linux-x86_64/\1/\2.S\) \&\&" +#g'
+    # You'll need to also edit the end of the last line (drop the && and the +)
+    cmd = (
+        "perl $(location crypto/bn/asm/x86_64-mont.pl) elf  > $(location linux-x86_64/crypto/bn/x86_64-mont.S) &&" +
+        "perl $(location crypto/bn/asm/x86_64-mont5.pl) elf  > $(location linux-x86_64/crypto/bn/x86_64-mont5.S) &&" +
+        "perl $(location crypto/bn/asm/rsaz-x86_64.pl) elf  > $(location linux-x86_64/crypto/bn/rsaz-x86_64.S) &&" +
+        "perl $(location crypto/bn/asm/rsaz-avx2.pl) elf  > $(location linux-x86_64/crypto/bn/rsaz-avx2.S) &&" +
+        "perl $(location crypto/md5/asm/md5-x86_64.pl) elf  > $(location linux-x86_64/crypto/md5/md5-x86_64.S) &&" +
+        "perl $(location crypto/rand/asm/rdrand-x86_64.pl) elf  > $(location linux-x86_64/crypto/rand/rdrand-x86_64.S) &&" +
+        "perl $(location crypto/modes/asm/aesni-gcm-x86_64.pl) elf  > $(location linux-x86_64/crypto/modes/aesni-gcm-x86_64.S) &&" +
+        "perl $(location crypto/modes/asm/ghash-x86_64.pl) elf  > $(location linux-x86_64/crypto/modes/ghash-x86_64.S) &&" +
+        "perl $(location crypto/aes/asm/aes-x86_64.pl) elf  > $(location linux-x86_64/crypto/aes/aes-x86_64.S) &&" +
+        "perl $(location crypto/aes/asm/aesni-x86_64.pl) elf  > $(location linux-x86_64/crypto/aes/aesni-x86_64.S) &&" +
+        "perl $(location crypto/aes/asm/bsaes-x86_64.pl) elf  > $(location linux-x86_64/crypto/aes/bsaes-x86_64.S) &&" +
+        "perl $(location crypto/aes/asm/vpaes-x86_64.pl) elf  > $(location linux-x86_64/crypto/aes/vpaes-x86_64.S) &&" +
+        "perl $(location crypto/sha/asm/sha1-x86_64.pl) elf  > $(location linux-x86_64/crypto/sha/sha1-x86_64.S) &&" +
+        "perl $(location crypto/sha/asm/sha512-x86_64.pl) elf sha256 > $(location linux-x86_64/crypto/sha/sha256-x86_64.S) &&" +
+        "perl $(location crypto/sha/asm/sha512-x86_64.pl) elf sha512 > $(location linux-x86_64/crypto/sha/sha512-x86_64.S) &&" +
+        "perl $(location crypto/rc4/asm/rc4-x86_64.pl) elf  > $(location linux-x86_64/crypto/rc4/rc4-x86_64.S) &&" +
+        "perl $(location crypto/rc4/asm/rc4-md5-x86_64.pl) elf  > $(location linux-x86_64/crypto/rc4/rc4-md5-x86_64.S)"
+    )
+)
 
 config_setting(
     name = "linux_aarch64",
@@ -530,11 +705,11 @@ genrule(
 cc_library(
     name = "crypto",
     srcs = crypto_internal_headers + crypto_sources + select({
-        ":linux_aarch64": crypto_sources_aarch64,
-        ":linux_arm": crypto_sources_arm,
-        ":linux_x86": crypto_sources_x86,
-        ":linux_x86_64": crypto_sources_x86_64,
-        "//conditions:default": crypto_sources_x86_64,
+        ":linux_aarch64": [':perlasm_files_aarch64'],
+        ":linux_arm": [':perlasm_files_arm'] + crypto_sources_arm_extra,
+        ":linux_x86": [':perlasm_files_x86'],
+        ":linux_x86_64": [':perlasm_files_x86_64'],
+        "//conditions:default": [':perlasm_files_x86_64'],
     }),
     hdrs = crypto_headers,
     includes = ["include"],
